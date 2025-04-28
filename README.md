@@ -1,2 +1,2 @@
 # Stanford-RNA 3D-FOLDING
- Solution for Stanford rna 3d folding 
+ Solución para competencia de stanford RNA 3d folding
