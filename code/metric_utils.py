@@ -1,8 +1,10 @@
+import tensorflow as tf
 from tensorflow.keras.callbacks import Callback
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 
 
 def compute_tm_score(y_true, y_pred):
@@ -35,7 +37,7 @@ def plot_training_history(history, train_tm_score=None, val_tm_score=None):
 
     plt.figure(figsize=(15, 5), dpi=300)
     sns.lineplot(x=epochs, y=history_df['loss'], marker='o', color='#118AB2', label='Pérdida entrenamiento')
-    sns.lineplot(x=epochs, y=history_df['val_loss'], marker='o', color='#52414C', label='Pérdida validación')
+    sns.lineplot(x=epochs, y=history_df['val_loss'], marker='o', color='#FF220C', label='Pérdida validación')
     plt.title('Evolución de la pérdida por época', fontsize=16, fontweight='bold', pad=15)
     plt.xlabel('Época', fontsize=13)
     plt.ylabel('Pérdida (Loss)', fontsize=13)
@@ -55,7 +57,7 @@ def plot_training_history(history, train_tm_score=None, val_tm_score=None):
 
         plt.figure(figsize=(15, 5), dpi=300)
         sns.lineplot(data=df_tm, x='Época', y='TM-score entrenamiento', marker='o', color='#118AB2', label='Entrenamiento')
-        sns.lineplot(data=df_tm, x='Época', y='TM-score validación', marker='o', color='#DFBBB1', label='Validación')
+        sns.lineplot(data=df_tm, x='Época', y='TM-score validación', marker='o', color='#FF220C', label='Validación')
         plt.title('Evolución del TM-score por época', fontsize=16, fontweight='bold', pad=15)
         plt.xlabel('Época', fontsize=13)
         plt.ylabel('TM-score', fontsize=13)
@@ -66,33 +68,21 @@ def plot_training_history(history, train_tm_score=None, val_tm_score=None):
         plt.show()
 
 
-class TMScoreCallback(Callback):
-    def __init__(self, X_train, y_train, train_meta, X_val, y_val, val_meta):
-        super().__init__()
+class TMScoreLogger(tf.keras.callbacks.Callback):
+    def __init__(self, X_train, y_train, X_val, y_val):
         self.X_train = X_train
         self.y_train = y_train
-        self.train_meta = train_meta  # debe tener ['sequence_id', 'position']
         self.X_val = X_val
         self.y_val = y_val
-        self.val_meta = val_meta
 
     def on_epoch_end(self, epoch, logs=None):
         y_train_pred = self.model.predict(self.X_train, verbose=0)
         y_val_pred = self.model.predict(self.X_val, verbose=0)
 
-        df_train_pred = self.train_meta.copy()
-        df_val_pred = self.val_meta.copy()
+        train_score = compute_tm_score(self.y_train, y_train_pred)
+        val_score = compute_tm_score(self.y_val, y_val_pred)
 
-        df_train_pred[['x_1', 'y_1', 'z_1']] = y_train_pred
-        df_val_pred[['x_1', 'y_1', 'z_1']] = y_val_pred
+        tm_train_scores.append(train_score)
+        tm_val_scores.append(val_score)
 
-        df_train_true = self.train_meta.copy()
-        df_train_true[['x_1', 'y_1', 'z_1']] = self.y_train
-
-        df_val_true = self.val_meta.copy()
-        df_val_true[['x_1', 'y_1', 'z_1']] = self.y_val
-
-        tm_train = evaluate_tm_scores_by_sequence(df_train_true, df_train_pred)
-        tm_val = evaluate_tm_scores_by_sequence(df_val_true, df_val_pred)
-
-        print(f"\nEpoch {epoch+1} — TM-score Train: {tm_train:.4f}, Val: {tm_val:.4f}")
+        print(f"Epoch {epoch + 1} — TM-score Train: {train_score:.4f}, Val: {val_score:.4f}")
