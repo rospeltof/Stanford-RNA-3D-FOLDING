@@ -26,6 +26,7 @@ data/
 .gitignore
 .gitattributes
 README.md
+environment.yml # Archivo con la lista de librerías y versiones necesarias
 ```
 ## Descripción de los notebooks
 
